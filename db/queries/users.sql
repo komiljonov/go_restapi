@@ -1,6 +1,34 @@
--- name: createUser :one
+-- name: AllUsers :many
+SELECT *
+FROM users;
+
+
+
+
+-- name: CreateUser :one
 INSERT INTO users (
-  name,phone_number,password,birthday
+  name,
+  phone_number,
+  password,
+  birthdate
 ) VALUES (
   $1,$2,$3,$4
-) RETURNING id,name,phone_number,password,birthday;
+) RETURNING *;
+
+
+
+
+-- name: GetByPhoneNumber :one
+SELECT *
+FROM users
+WHERE phone_number = $1;
+
+
+
+
+-- name: GetUser :one
+SELECT *
+FROM users
+WHERE id = $1;
+
+

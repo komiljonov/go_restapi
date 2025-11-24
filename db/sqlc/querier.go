@@ -2,10 +2,10 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type Querier interface {
-	createUser(ctx context.Context, arg createUserParams) (pgconn.CommandTag, error)
+	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	AllUsers(ctx context.Context) ([]User, error)
+	GetByPhoneNumber(ctx context.Context, phoneNumber string) (User, error)
 }

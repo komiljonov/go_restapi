@@ -9,11 +9,10 @@ import (
 )
 
 type User struct {
-	ID          int32
-	Name        string
-	PhoneNumber string
-	Password    string
-	Birthdate   pgtype.Date
-	CreatedAt   pgtype.Timestamptz
+	ID          int32              `json:"id"`
+	Name        string             `json:"name"`
+	PhoneNumber string             `json:"phone_number"`
+	Password    string             `json:"password"`
+	Birthdate   pgtype.Date        `json:"birthdate"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
-

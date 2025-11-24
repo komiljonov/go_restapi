@@ -8,30 +8,114 @@ package db
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createUser = `-- name: createUser :execresult
-INSERT INTO users (
-  name,phone_number,password,birthdate
-) VALUES (
-  $1,$2,$3,$4
-)
+const allUsers = `-- name: AllUsers :many
+SELECT id, name, phone_number, password, birthdate, created_at
+FROM users
 `
 
-type createUserParams struct {
-	Name        string
-	PhoneNumber string
-	Password    string
-	Birthdate   pgtype.Date
+func (q *Queries) AllUsers(ctx context.Context) ([]User, error) {
+	rows, err := q.db.Query(ctx, allUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []User{}
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.PhoneNumber,
+			&i.Password,
+			&i.Birthdate,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
-func (q *Queries) createUser(ctx context.Context, arg createUserParams) (pgconn.CommandTag, error) {
-	return q.db.Exec(ctx, createUser,
+const createUser = `-- name: CreateUser :one
+INSERT INTO users (
+  name,
+  phone_number,
+  password,
+  birthdate
+) VALUES (
+  $1,$2,$3,$4
+) RETURNING id, name, phone_number, password, birthdate, created_at
+`
+
+type CreateUserParams struct {
+	Name        string      `json:"name"`
+	PhoneNumber string      `json:"phone_number"`
+	Password    string      `json:"password"`
+	Birthdate   pgtype.Date `json:"birthdate"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, createUser,
 		arg.Name,
 		arg.PhoneNumber,
 		arg.Password,
 		arg.Birthdate,
 	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.PhoneNumber,
+		&i.Password,
+		&i.Birthdate,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getByPhoneNumber = `-- name: GetByPhoneNumber :one
+SELECT id, name, phone_number, password, birthdate, created_at
+FROM users
+WHERE phone_number = $1
+`
+
+func (q *Queries) GetByPhoneNumber(ctx context.Context, phoneNumber string) (User, error) {
+	row := q.db.QueryRow(ctx, getByPhoneNumber, phoneNumber)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.PhoneNumber,
+		&i.Password,
+		&i.Birthdate,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getUser = `-- name: GetUser :one
+SELECT id, name, phone_number, password, birthdate, created_at
+FROM users
+WHERE id = $1
+`
+
+func (q *Queries) GetUser(ctx context.Context, id int32) (User, error) {
+	row := q.db.QueryRow(ctx, getUser, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.PhoneNumber,
+		&i.Password,
+		&i.Birthdate,
+		&i.CreatedAt,
+	)
+	return i, err
 }

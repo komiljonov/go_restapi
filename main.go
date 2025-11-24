@@ -42,7 +42,9 @@ func main() {
 	pool := db.Connect(config)
 	defer pool.Close()
 
-	server := api.NewServer(config, pool)
+	store := db.NewConduitStore(pool)
+
+	server := api.NewServer(config, pool, store)
 
 	server.MountHandlers()
 	addr := fmt.Sprintf(":%s", config.Port)
