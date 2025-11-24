@@ -1,0 +1,85 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"restapi/api"
+	conf "restapi/config"
+	db "restapi/db/sqlc"
+	"syscall"
+	"time"
+	// db "restapi/db/sqlc"
+)
+
+func main() {
+
+	var (
+		config conf.Config
+	)
+
+	env := os.Getenv("ENVIRONMENT")
+
+	if env == "" {
+		env = "dev"
+	}
+
+	config = conf.LoadConfig(env, "env")
+
+	config.DBUrl = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		config.DBUsername,
+		config.DBPassword,
+		config.DBHost,
+		config.DBPort,
+		config.DBName,
+	)
+
+	fmt.Println(config.DBUrl)
+
+	pool := db.Connect(config)
+	defer pool.Close()
+
+	server := api.NewServer(config, pool)
+
+	server.MountHandlers()
+	addr := fmt.Sprintf(":%s", config.Port)
+
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: server.Router(),
+	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Listen: %s\n", err)
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server with
+	// a timeout of 5 seconds.
+	quit := make(chan os.Signal, 1)
+
+	// kill (no param) default send syscall.SIGTERM
+	// kill -2 is syscall.SIGINT
+	// kill -9 is syscall.SIGKILL but can't be catch, so don't need add it
+
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	<-quit
+
+	fmt.Println("Shutdown server ...")
+
+	// The context is used to inform the server it has 5 seconds to finish
+	// the request it is currently handling
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown: ", err)
+	}
+
+	fmt.Println("Server exiting")
+
+}
