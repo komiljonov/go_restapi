@@ -12,7 +12,7 @@ type User struct {
 	ID          int32              `json:"id"`
 	Name        string             `json:"name"`
 	PhoneNumber string             `json:"phone_number"`
-	Password    string             `json:"password"`
+	Password    string             `json:"-"`
 	Birthdate   pgtype.Date        `json:"birthdate"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }

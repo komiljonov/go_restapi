@@ -30,14 +30,16 @@ func (store *ConduitStore) CreateUserTx(
 	ctx context.Context,
 	arg CreateUserParams,
 ) (*User, error) {
-	tx, err := store.db.Begin(ctx)
+
+	tx, err := store.db.Acquire(ctx)
+
 	if err != nil {
 		return nil, err
 	}
 
-	defer tx.Rollback(ctx)
+	defer tx.Release()
 
-	qtx := store.Queries.WithTx(tx)
+	qtx := New(tx)
 
 	_, err = qtx.GetByPhoneNumber(ctx, arg.PhoneNumber)
 
@@ -57,12 +59,6 @@ func (store *ConduitStore) CreateUserTx(
 		Password:    arg.Password,
 		Birthdate:   arg.Birthdate,
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	err = tx.Commit(ctx)
 
 	if err != nil {
 		return nil, err

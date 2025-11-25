@@ -41,7 +41,7 @@ func GenerateJWT(userID, tokenType string) (string, error) {
 
 func ParseAndVerifyJWT(tokenStr string) (*CustomClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
-		// Ensure algorithm is what you expect:
+		// Ensure the algorithm is what you expect:
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, jwt.ErrSignatureInvalid
 		}

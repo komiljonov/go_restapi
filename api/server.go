@@ -30,12 +30,14 @@ func NewServer(config config.Config, pool *pgxpool.Pool, store db.Store) *Server
 
 func (s *Server) MountHandlers() {
 	api := s.router.Group("/api")
-	api.GET("/ping", s.Ping)
 
-	auth := api.Group("/auth")
-	auth.POST("/register", s.RegisterHandler)
+	auth := api.Group("/auth", s.AuthMiddleware())
+	auth.POST("/register", s.HandleRegister)
+	auth.POST("/login", s.HandleLogin)
+	auth.GET("/me", s.AuthRequired(s.HandleMe))
+	auth.PATCH("/me", s.AuthRequired(s.HandleMeUpdate))
 
-	users := api.Group("/users")
+	users := api.Group("/users", s.AuthMiddleware())
 	users.GET("", s.HandleAllUsers)
 
 }
